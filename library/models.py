@@ -1,6 +1,30 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.contrib.auth.base_user import BaseUserManager
 
+class UserManager(BaseUserManager):
+    use_in_migrations = True
+
+    def create_user(self, username, email=None, password=None, **extra_fields):
+        if not username:
+            raise ValueError('El nombre de usuario es obligatorio')
+        email = self.normalize_email(email)
+        user = self.model(username=username, email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, username, email=None, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('is_bibliotecario', True)
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('El superusuario debe tener is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('El superusuario debe tener is_superuser=True.')
+        return self.create_user(username, email, password, **extra_fields)
+    
 class User(AbstractUser):
     TYPE_CHOICES = [
         ('STUDENT', 'Estudiante'),
@@ -40,3 +64,25 @@ class Loan(models.Model):
     loan_date = models.DateField(auto_now_add=True)
     return_date = models.DateField(null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='AWAITING')
+    
+    def __str__(self):
+        return self.book.title + "-" + self.user.username
+
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ('MULTA', 'Multa'),
+        ('VENCIMIENTO', 'Vencimiento'),
+        ('DISPONIBILIDAD', 'Disponibilidad'),
+        ('SISTEMA', 'Sistema'),
+    ]
+
+    user = models.ForeignKey(User, related_name='notifications', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    title = models.CharField(max_length=100)
+    description = models.TextField()
+    type = models.CharField(max_length=15, choices=TYPE_CHOICES)
+    is_read = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
