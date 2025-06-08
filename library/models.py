@@ -56,7 +56,7 @@ class Loan(models.Model):
     STATUS_CHOICES = [
         ('AWAITING', 'Esperando aprobacion'),
         ('ONDATE', 'Prestado y en tiempo'),
-        ('AWAITING', 'Prestado y fuera de tiempo'),
+        ('OFFDATE', 'Prestado y fuera de tiempo'),
     ]
     
     user = models.ForeignKey(User, related_name='loans', on_delete=models.CASCADE)

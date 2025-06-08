@@ -104,3 +104,29 @@ class CustomAuthToken(ObtainAuthToken):
             'username': user.username,
             'is_bibliotecario': user.is_bibliotecario,  # o 'is_librarian' si prefieres
         })
+
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+class UserLoansView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        # Solo bibliotecario o el propio usuario puede ver sus préstamos
+        if not (request.user.is_bibliotecario or request.user.id == user_id):
+            return Response({'detail': 'No autorizado.'}, status=403)
+        loans = Loan.objects.filter(user__id=user_id)
+        serializer = LoanSerializer(loans, many=True)
+        return Response(serializer.data)
+
+class UserNotificationsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        # Solo bibliotecario o el propio usuario puede ver sus notificaciones
+        if not (request.user.is_bibliotecario or request.user.id == user_id):
+            return Response({'detail': 'No autorizado.'}, status=403)
+        notifications = Notification.objects.filter(user__id=user_id)
+        serializer = NotificationSerializer(notifications, many=True)
+        return Response(serializer.data)
